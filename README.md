@@ -1,2 +1,2 @@
 # administracion-base-de-datos
-DBA - IVD- DPW
+Curso de Administración de Base de Datos Usando MySQL
