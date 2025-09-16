@@ -1,3 +1,23 @@
+## Organización por semanas
+
+El repositorio está estructurado para un curso de 16 semanas. A partir de la semana 2 se comienza la creación de la base de datos y cada semana tiene su propia carpeta con los scripts y materiales correspondientes.
+
+Ejemplo de estructura:
+
+```
+mysql/
+├── semana_02_creacion_bd/
+│   └── crear_base_de_datos.sql
+├── semana_03_tablas/
+│   └── crear_tablas.sql
+├── semana_04_inserts/
+│   └── insertar_datos.sql
+├── semana_05_consultas_basicas/
+│   └── consultas.sql
+└── ... (continúa hasta semana_16)
+```
+
+Esto facilita el seguimiento del curso y la ubicación de los materiales por semana.
 
 # administracion-base-de-datos
 Curso de Administración de Bases de Datos Usando MySQL
