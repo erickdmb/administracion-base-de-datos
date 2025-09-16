@@ -1,2 +1,2 @@
 # administracion-base-de-datos
-Curso de Administración de Base de Datos Usando MySQL
+Curso de Administración de Bases de Datos Usando MySQL
