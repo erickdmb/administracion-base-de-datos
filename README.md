@@ -1,110 +1,83 @@
-## Organización por semanas
+# Ejemplo mínimo: MySQL con Docker
 
-El repositorio está estructurado para un curso de 16 semanas. A partir de la semana 2 se comienza la creación de la base de datos y cada semana tiene su propia carpeta con los scripts y materiales correspondientes.
+Este repositorio muestra cómo levantar una base de datos MySQL 8 usando Docker para practicar comandos desde la terminal.
 
-Ejemplo de estructura:
+Al iniciar por primera vez se ejecuta el script `00_setup_tienda_g_db.sql` (debe estar en la raíz). Ajusta su contenido para que sea válido en MySQL.
 
+## Requisitos
+- Docker Desktop (Windows / Mac) o Docker Engine (Linux)
+
+## Paso 1: levantar MySQL
+```powershell
+docker compose up -d
 ```
-mysql/
-├── semana_02_creacion_bd/
-│   └── crear_base_de_datos.sql
-├── semana_03_tablas/
-│   └── crear_tablas.sql
-├── semana_04_inserts/
-│   └── insertar_datos.sql
-├── semana_05_consultas_basicas/
-│   └── consultas.sql
-└── ... (continúa hasta semana_16)
+MySQL quedará accesible en `localhost:3306`.
+
+Credenciales por defecto (definidas en `docker-compose.yml`):
 ```
-
-Esto facilita el seguimiento del curso y la ubicación de los materiales por semana.
-
-# administracion-base-de-datos
-Curso de Administración de Bases de Datos Usando MySQL
-
-## Requisitos previos
-
-### 1. Instalación de Docker
-
-1. Descarga e instala Docker Desktop desde: https://www.docker.com/products/docker-desktop/
-2. Sigue las instrucciones de instalación según tu sistema operativo (Windows, Mac o Linux).
-3. Verifica la instalación ejecutando en la terminal:
-	```sh
-	docker --version
-	docker-compose --version
-	```
-
-## Estructura recomendada del repositorio
-
+MYSQL_ROOT_PASSWORD=root
+MYSQL_DATABASE=tienda_g_db
 ```
-administracion-base-de-datos/
-│
-├── README.md
-├── docker-compose.yml
-├── mysql/
-│   ├── init/           # Scripts SQL de inicialización
-│   └── backups/        # Respaldos de la base de datos
-└── docs/               # Documentación adicional
+Para cambiarlas, edita directamente `docker-compose.yml` y vuelve a levantar (`docker compose down -v && docker compose up -d`).
+
+## Paso 2: conectarte dentro del contenedor
+```powershell
+docker compose exec db mysql -u root -p"root"
 ```
 
-## Uso de Docker y docker-compose
-
-
-### 1. Levantar el servicio MySQL
-Ubícate en la carpeta del proyecto y ejecuta:
-```sh
-docker-compose up -d
+## Ejecutar el script inicial de nuevo (si modificas el .sql)
+Se corre sólo la primera vez (volumen vacío). Para forzar:
+```powershell
+docker compose down -v
+docker compose up -d
+```
+O manualmente (como root):
+```powershell
+docker compose exec -T db mysql -u root -p"root" tienda_g_db < .\00_setup_tienda_g_db.sql
 ```
 
-### 2. Forzar reconstrucción de imágenes (si cambiaste scripts o configuración)
-```sh
-docker-compose up -d --build
+## Ver logs
+```powershell
+docker compose logs -f db
 ```
 
-### 3. Conectarse a MySQL con MySQL Workbench
-Abre MySQL Workbench y crea una nueva conexión con los siguientes datos:
-
-- Hostname: 127.0.0.1
-- Port: 3306
-- Username: root
-- Password: root
-
-Puedes cambiar estos valores en el archivo `docker-compose.yml` si lo necesitas.
-
-### 4. Detener y eliminar los servicios
-```sh
-docker-compose down -v
+## Apagar
+```powershell
+docker compose down
 ```
 
-### 5. Limpiar imágenes y volúmenes (opcional, para empezar de cero)
-```sh
-docker-compose down --rmi all -v
-docker system prune -a
+## Dump rápido
+```powershell
+docker compose exec db mysqldump -u root -p"root" tienda_g_db > dump.sql
 ```
 
-## Comandos útiles de Git
+## Notas
+- Cambia contraseñas antes de compartir el archivo.
+- Si tienes otro MySQL local usa `3307:3306` en `docker-compose.yml`.
+- El script `00_setup_tienda_g_db.sql` crea y rellena la base `tienda_g_db`; puedes editarlo libremente.
 
-```sh
-# Clonar el repositorio
-git clone https://github.com/erickdmb/administracion-base-de-datos.git
+## Prácticas en terminal (con root)
+Dentro del cliente MySQL:
+```sql
+-- Ver bases de datos y seleccionar la de trabajo
+SHOW DATABASES;
+USE tienda_g_db;
+SHOW TABLES;
+SELECT COUNT(*) FROM Productos;
 
-# Crear y cambiar a una nueva rama
-git checkout -b feature/mi-rama
+-- Crear un usuario para la app
+CREATE USER 'appuser'@'%' IDENTIFIED BY 'app_pass';
 
-# Actualizar tu rama con main
-git fetch origin
-git merge origin/main
+-- Dar permisos básicos sobre la base
+GRANT SELECT, INSERT, UPDATE, DELETE ON tienda_g_db.* TO 'appuser'@'%';
+-- (Opcional) más permisos: ALTER, CREATE, DROP, INDEX
+-- GRANT ALL PRIVILEGES ON tienda_g_db.* TO 'appuser'@'%';
 
-# Subir cambios a tu rama
-git add .
-git commit -m "Descripción de los cambios"
-git push origin feature/mi-rama
-
-# Subir cambios a main (si eres el owner)
-git checkout main
-git merge feature/mi-rama
-git push origin main
+-- Ver privilegios del usuario
+SHOW GRANTS FOR 'appuser'@'%';
 ```
 
----
-Sigue estas instrucciones para facilitar el trabajo colaborativo y la gestión de la base de datos con MySQL y Docker.
+Probar login con el usuario creado:
+```powershell
+docker compose exec db mysql -u appuser -p"app_pass" tienda_g_db
+```

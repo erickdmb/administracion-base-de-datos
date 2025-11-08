@@ -1,0 +1,20 @@
+# Dumps / backups (pero NO el script de inicialización)
+*.dump.sql
+dump.sql
+backup_*.sql
+*_backup.sql
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker artifacts
+**/mysqldata/
+
+# Logs
+*.log
+
+# PowerShell history (if any)
+ConsoleHost_history.txt

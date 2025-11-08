@@ -1,12 +1,18 @@
+version: "3.9"
+
 services:
-  mysql:
+  db:
     image: mysql:8.0
-    container_name: mysql_db
-    restart: always
+    container_name: tienda_g_mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tienda_g_db
     ports:
       - "3306:3306"
     volumes:
-      - ./mysql/init:/docker-entrypoint-initdb.d
-      - ./mysql/backups:/backups
+      - mysqldata:/var/lib/mysql
+      - ./00_setup_tienda_g_db.sql:/docker-entrypoint-initdb.d/00_setup.sql:ro
+
+volumes:
+  mysqldata:
