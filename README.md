@@ -1,83 +1,113 @@
-# Ejemplo mínimo: MySQL con Docker
+# MySQL con Docker: guía paso a paso (Windows PowerShell)
 
-Este repositorio muestra cómo levantar una base de datos MySQL 8 usando Docker para practicar comandos desde la terminal.
+Este repositorio levanta una base de datos MySQL 8 con Docker y ejecuta automáticamente el script `00_setup_tienda_g_db.sql` en el primer arranque.
 
-Al iniciar por primera vez se ejecuta el script `00_setup_tienda_g_db.sql` (debe estar en la raíz). Ajusta su contenido para que sea válido en MySQL.
+La guía está pensada para Windows usando PowerShell.
 
-## Requisitos
-- Docker Desktop (Windows / Mac) o Docker Engine (Linux)
+## 0) Instalar Docker
 
-## Paso 1: levantar MySQL
+- Windows: instala Docker Desktop desde:
+	https://www.docker.com/products/docker-desktop/
+- Tras instalar, reinicia si te lo pide y abre PowerShell.
+
+Verifica que Docker quedó instalado:
+```powershell
+docker --version
+docker compose version
+```
+Si tu versión no soporta el subcomando `compose`, prueba con el binario antiguo:
+```powershell
+docker-compose --version
+```
+
+## 1) Abrir la carpeta del proyecto
+
+En PowerShell, navega hasta la carpeta del repositorio (ajusta la ruta si es distinta):
+```powershell
+cd "C:\Users\ErickDMB\Documents\DPW_DBA\administracion-base-de-datos"
+```
+
+Archivos clave:
+- `docker-compose.yml`: define el servicio MySQL y los volúmenes.
+- `00_setup_tienda_g_db.sql`: script que se ejecuta automáticamente la primera vez.
+
+## 2) Levantar MySQL con Docker
+
+Usa el nuevo subcomando (recomendado):
 ```powershell
 docker compose up -d
 ```
-MySQL quedará accesible en `localhost:3306`.
+Si tu instalación sólo tiene el binario antiguo, usa:
+```powershell
+docker-compose up -d
+```
+
+Cuando termine, MySQL quedará accesible en `localhost:3306`.
 
 Credenciales por defecto (definidas en `docker-compose.yml`):
 ```
-MYSQL_ROOT_PASSWORD=root
-MYSQL_DATABASE=tienda_g_db
-```
-Para cambiarlas, edita directamente `docker-compose.yml` y vuelve a levantar (`docker compose down -v && docker compose up -d`).
-
-## Paso 2: conectarte dentro del contenedor
-```powershell
-docker compose exec db mysql -u root -p"root"
+MYSQL_ROOT_PASSWORD = root
+MYSQL_DATABASE      = tienda_g_db
 ```
 
-## Ejecutar el script inicial de nuevo (si modificas el .sql)
-Se corre sólo la primera vez (volumen vacío). Para forzar:
-```powershell
-docker compose down -v
-docker compose up -d
-```
-O manualmente (como root):
-```powershell
-docker compose exec -T db mysql -u root -p"root" tienda_g_db < .\00_setup_tienda_g_db.sql
-```
+## 3) Verificar que está corriendo
 
-## Ver logs
+Listar el estado de los servicios:
+```powershell
+docker compose ps
+```
+Ver logs del servicio de base de datos:
 ```powershell
 docker compose logs -f db
 ```
 
-## Apagar
+Entrar al cliente de MySQL dentro del contenedor como root:
 ```powershell
-docker compose down
+docker compose exec db mysql -u root -p"root"
 ```
 
-## Dump rápido
-```powershell
-docker compose exec db mysqldump -u root -p"root" tienda_g_db > dump.sql
-```
-
-## Notas
-- Cambia contraseñas antes de compartir el archivo.
-- Si tienes otro MySQL local usa `3307:3306` en `docker-compose.yml`.
-- El script `00_setup_tienda_g_db.sql` crea y rellena la base `tienda_g_db`; puedes editarlo libremente.
-
-## Prácticas en terminal (con root)
-Dentro del cliente MySQL:
+Dentro del cliente puedes probar:
 ```sql
--- Ver bases de datos y seleccionar la de trabajo
 SHOW DATABASES;
 USE tienda_g_db;
 SHOW TABLES;
-SELECT COUNT(*) FROM Productos;
-
--- Crear un usuario para la app
-CREATE USER 'appuser'@'%' IDENTIFIED BY 'app_pass';
-
--- Dar permisos básicos sobre la base
-GRANT SELECT, INSERT, UPDATE, DELETE ON tienda_g_db.* TO 'appuser'@'%';
--- (Opcional) más permisos: ALTER, CREATE, DROP, INDEX
--- GRANT ALL PRIVILEGES ON tienda_g_db.* TO 'appuser'@'%';
-
--- Ver privilegios del usuario
-SHOW GRANTS FOR 'appuser'@'%';
 ```
 
-Probar login con el usuario creado:
+## 4) Volver a cargar el script inicial (opcional)
+
+El script `00_setup_tienda_g_db.sql` se ejecuta automáticamente sólo al primer arranque (cuando el volumen de datos está vacío).
+
+Para forzar su ejecución de nuevo (ADVERTENCIA: borra datos):
 ```powershell
-docker compose exec db mysql -u appuser -p"app_pass" tienda_g_db
+docker compose down -v
+docker compose up -d
 ```
+
+O aplicarlo manualmente contra la base actual:
+```powershell
+docker compose exec -T db mysql -u root -p"root" tienda_g_db < .\00_setup_tienda_g_db.sql
+```
+
+## 5) Detener y limpiar
+
+Detener contenedores (sin borrar datos):
+```powershell
+docker compose down
+```
+Borrar también el volumen de datos (resetea la base):
+```powershell
+docker compose down -v
+```
+
+## Errores frecuentes y cómo resolverlos
+
+- Puerto en uso (3306): edita `docker-compose.yml` y cambia el mapeo de puertos por ejemplo a `"3307:3306"`; luego levanta de nuevo.
+- No tienes `docker compose` pero sí `docker-compose`: usa los comandos con guion (`docker-compose ...`).
+- WSL2 requerido (Windows): desde Docker Desktop, habilita “Use the WSL 2 based engine” y asegúrate de tener WSL2 instalado.
+- Fallo al ejecutar el SQL inicial: revisa la salida de `docker compose logs -f db`. Corrige el archivo `00_setup_tienda_g_db.sql` y vuelve a levantar con `down -v` si necesitas re-ejecutarlo automáticamente.
+
+## Notas
+
+- Cambia credenciales antes de compartir el proyecto.
+- El archivo `docker-compose.yml` monta el script SQL como sólo lectura y persiste datos en el volumen `mysqldata`.
+- Si ya tienes un MySQL local, cambia el puerto publicado para evitar conflicto.
